@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
+	"strings"
 )
 
 func main() {
@@ -29,4 +31,21 @@ func main() {
 		fmt.Println("Starting SonarQube container")
 		docker.StartContainer(cli, contId)
 	}
+
+	fmt.Println("Waiting for SonarQube to be operational")
+	out := docker.FollowContainerLogStream(cli, contId)
+	bufOut := bufio.NewReader(out)
+
+	for {
+		bytes, _, err := bufOut.ReadLine()
+		if err != nil {
+			panic(err)
+		}
+
+		if strings.HasSuffix(string(bytes), sonar.SonarqubeOperationalMsg) {
+			break
+		}
+	}
+	out.Close()
+	fmt.Println("SonarQube is operational")
 }

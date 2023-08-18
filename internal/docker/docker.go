@@ -75,3 +75,14 @@ func StartContainer(cli *client.Client, id string) {
 func ShortId(id string) string {
 	return id[:shortIdLength]
 }
+
+func FollowContainerLogStream(cli *client.Client, id string) io.ReadCloser {
+	out, err := cli.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
+		Follow:     true,
+		ShowStdout: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
