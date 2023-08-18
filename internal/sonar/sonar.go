@@ -1,3 +1,3 @@
-package internal
+package sonar
 
 const SonarqubeImage = "sonarqube"

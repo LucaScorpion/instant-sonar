@@ -2,30 +2,31 @@ package main
 
 import (
 	"fmt"
-	"instant-sonar/internal"
+	"instant-sonar/internal/docker"
+	"instant-sonar/internal/sonar"
 )
 
 func main() {
 	fmt.Println("Starting instant Sonar")
-	cli := internal.NewDockerClient()
+	cli := docker.NewDockerClient()
 	defer cli.Close()
 
 	contId := ""
-	if cont, exists := internal.FindContainerByImageName(cli, internal.SonarqubeImage); exists {
+	if cont, exists := docker.FindContainerByImageName(cli, sonar.SonarqubeImage); exists {
 		fmt.Println("SonarQube container already exists")
 		contId = cont.ID
 
 		if cont.State != "running" {
 			fmt.Println("Starting SonarQube container")
-			internal.StartContainer(cli, contId)
+			docker.StartContainer(cli, contId)
 		}
 	} else {
 		fmt.Println("Pulling SonarQube image")
-		internal.PullImage(cli, internal.SonarqubeImage)
+		docker.PullImage(cli, sonar.SonarqubeImage)
 		fmt.Println("Creating SonarQube container")
-		contId = internal.CreateContainer(cli, internal.SonarqubeImage, "sonarqube")
+		contId = docker.CreateContainer(cli, sonar.SonarqubeImage, "sonarqube")
 		fmt.Println("Starting SonarQube container")
-		internal.StartContainer(cli, contId)
+		docker.StartContainer(cli, contId)
 	}
 
 	fmt.Println(contId)
