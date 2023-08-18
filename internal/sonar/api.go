@@ -8,13 +8,10 @@ import (
 	"strings"
 )
 
-const SonarqubeImage = "sonarqube"
-const SonarqubeOperationalMsg = "SonarQube is operational"
-
 const apiContentType = "application/x-www-form-urlencoded"
 
 type Client struct {
-	url      string
+	Url      string
 	username string
 	password string
 }
@@ -25,7 +22,7 @@ type tokenResponse struct {
 
 func NewDefaultLocalSonarQubeClient() *Client {
 	return &Client{
-		url:      "http://localhost:9000",
+		Url:      "http://localhost:9000",
 		username: "admin",
 		password: "admin",
 	}
@@ -64,7 +61,7 @@ func (client *Client) CreateToken(projectKey string) string {
 }
 
 func (client *Client) request(method, path string, body io.Reader) *http.Response {
-	req, _ := http.NewRequest(method, client.url+path, body)
+	req, _ := http.NewRequest(method, client.Url+path, body)
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Set("Content-Type", apiContentType)
 	res, _ := http.DefaultClient.Do(req)
@@ -72,7 +69,7 @@ func (client *Client) request(method, path string, body io.Reader) *http.Respons
 }
 
 func (client *Client) ProjectDashboardUrl(projectKey string) string {
-	return client.url + "/dashboard?id=" + projectKey
+	return client.Url + "/dashboard?id=" + projectKey
 }
 
 func createBody(body map[string]string) io.Reader {

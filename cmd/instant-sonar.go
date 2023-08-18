@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
+	"github.com/docker/docker/api/types/container"
 	"instant-sonar/internal"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
@@ -15,27 +16,29 @@ func main() {
 	cli := docker.NewDockerClient()
 	defer cli.Close()
 
-	contId := ""
+	qubeContId := ""
 	if cont, exists := docker.FindContainerByImageName(cli, sonar.SonarqubeImage); exists {
-		contId = cont.ID
-		fmt.Println("SonarQube container already exists (" + docker.ShortId(contId) + ")")
+		qubeContId = cont.ID
+		fmt.Println("SonarQube container already exists (" + docker.ShortId(qubeContId) + ")")
 
 		if cont.State != docker.RunningState {
 			fmt.Println("Starting SonarQube container")
-			docker.StartContainer(cli, contId)
+			docker.StartContainer(cli, qubeContId)
 		}
 	} else {
 		fmt.Println("Pulling SonarQube image")
 		docker.PullImage(cli, sonar.SonarqubeImage)
+
 		fmt.Print("Creating SonarQube container")
-		contId = docker.CreateContainer(cli, sonar.SonarqubeImage, "sonarqube", []nat.Port{"9000/tcp"})
-		fmt.Println(" (" + docker.ShortId(contId) + ")")
+		qubeContId = sonar.CreateSonarQubeContainer(cli)
+		fmt.Println(" (" + docker.ShortId(qubeContId) + ")")
+
 		fmt.Println("Starting SonarQube container")
-		docker.StartContainer(cli, contId)
+		docker.StartContainer(cli, qubeContId)
 	}
 
 	fmt.Println("Waiting for SonarQube to be operational")
-	out := docker.FollowContainerLogStream(cli, contId)
+	out := docker.FollowContainerLogStream(cli, qubeContId)
 	bufOut := bufio.NewReader(out)
 
 	for {
@@ -61,6 +64,18 @@ func main() {
 	fmt.Print("Creating analysis token")
 	token := sonarApi.CreateToken(projectKey)
 	fmt.Println(" (" + token + ")")
+
+	fmt.Println("Pulling Sonar Scanner image")
+	docker.PullImage(cli, sonar.SonarScannerImage)
+
+	fmt.Print("Creating Sonar Scanner container")
+	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token)
+	fmt.Println(" (" + docker.ShortId(scanContId) + ")")
+
+	fmt.Println("Starting analysis")
+	docker.StartContainer(cli, scanContId)
+	cli.ContainerWait(context.Background(), scanContId, container.WaitConditionRemoved)
+	fmt.Println("Done!")
 
 	fmt.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
 }

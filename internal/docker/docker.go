@@ -3,9 +3,7 @@ package docker
 import (
 	"context"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
 	"io"
 	"strings"
 )
@@ -46,36 +44,6 @@ func PullImage(cli *client.Client, image string) {
 	}
 	defer out.Close()
 	io.Copy(io.Discard, out)
-}
-
-func CreateContainer(cli *client.Client, image, name string, ports []nat.Port) string {
-	exposedPorts := nat.PortSet{}
-	portBindings := nat.PortMap{}
-
-	for _, port := range ports {
-		exposedPorts[port] = struct{}{}
-		portNum := strings.Split(string(port), "/")[0]
-		portBindings[port] = []nat.PortBinding{{HostPort: portNum}}
-	}
-
-	res, err := cli.ContainerCreate(
-		context.Background(),
-		&container.Config{
-			Image:        image,
-			ExposedPorts: exposedPorts,
-		},
-		&container.HostConfig{
-			PortBindings: portBindings,
-		},
-		nil,
-		nil,
-		name,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	return res.ID
 }
 
 func StartContainer(cli *client.Client, id string) {
