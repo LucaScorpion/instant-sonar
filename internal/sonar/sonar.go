@@ -1,8 +1,10 @@
 package sonar
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -11,29 +13,57 @@ const SonarqubeOperationalMsg = "SonarQube is operational"
 
 const apiContentType = "application/x-www-form-urlencoded"
 
-type SonarQubeClient struct {
+type Client struct {
 	url      string
 	username string
 	password string
 }
 
-func NewDefaultLocalSonarQubeClient() *SonarQubeClient {
-	return &SonarQubeClient{
+type tokenResponse struct {
+	Token string `json:"token"`
+}
+
+func NewDefaultLocalSonarQubeClient() *Client {
+	return &Client{
 		url:      "http://localhost:9000",
 		username: "admin",
 		password: "admin",
 	}
 }
 
-func (client *SonarQubeClient) CreateProject(name, key string) {
+func (client *Client) CreateProject(name, key string) {
 	client.request(
 		http.MethodPost,
 		"/api/projects/create",
-		strings.NewReader("name="+name+"&project="+key),
+		createBody(map[string]string{
+			"name":    name,
+			"project": key,
+		}),
 	)
 }
 
-func (client *SonarQubeClient) request(method, path string, body io.Reader) *http.Response {
+func (client *Client) CreateToken(projectKey string) string {
+	res := client.request(
+		http.MethodPost,
+		"/api/user_tokens/generate",
+		createBody(map[string]string{
+			"name":       "Analyze " + projectKey,
+			"projectKey": projectKey,
+			"type":       "PROJECT_ANALYSIS_TOKEN",
+		}),
+	)
+
+	var tokenRes tokenResponse
+	resBytes, _ := io.ReadAll(res.Body)
+	err := json.Unmarshal(resBytes, &tokenRes)
+	if err != nil {
+		panic(err)
+	}
+
+	return tokenRes.Token
+}
+
+func (client *Client) request(method, path string, body io.Reader) *http.Response {
 	req, _ := http.NewRequest(method, client.url+path, body)
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Set("Content-Type", apiContentType)
@@ -41,6 +71,14 @@ func (client *SonarQubeClient) request(method, path string, body io.Reader) *htt
 	return res
 }
 
-func (client *SonarQubeClient) ProjectDashboardUrl(key string) string {
-	return client.url + "/dashboard?id=" + key
+func (client *Client) ProjectDashboardUrl(projectKey string) string {
+	return client.url + "/dashboard?id=" + projectKey
+}
+
+func createBody(body map[string]string) io.Reader {
+	values := make(url.Values)
+	for k, v := range body {
+		values[k] = []string{v}
+	}
+	return strings.NewReader(values.Encode())
 }

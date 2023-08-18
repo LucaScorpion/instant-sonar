@@ -58,5 +58,9 @@ func main() {
 	sonarApi.CreateProject(projectKey, projectKey)
 	fmt.Println(" (" + projectKey + ")")
 
+	fmt.Print("Creating analysis token")
+	token := sonarApi.CreateToken(projectKey)
+	fmt.Println(" (" + token + ")")
+
 	fmt.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
 }
