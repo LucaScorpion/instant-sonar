@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/docker/go-connections/nat"
+	"instant-sonar/internal"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
 	"strings"
@@ -49,4 +50,13 @@ func main() {
 	}
 	out.Close()
 	fmt.Println("SonarQube is operational")
+
+	sonarApi := sonar.NewDefaultLocalSonarQubeClient()
+
+	fmt.Print("Creating project")
+	projectKey := internal.RandomString(16)
+	sonarApi.CreateProject(projectKey, projectKey)
+	fmt.Println(" (" + projectKey + ")")
+
+	fmt.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
 }
