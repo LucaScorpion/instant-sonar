@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/docker/go-connections/nat"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
 	"strings"
@@ -26,7 +27,7 @@ func main() {
 		fmt.Println("Pulling SonarQube image")
 		docker.PullImage(cli, sonar.SonarqubeImage)
 		fmt.Print("Creating SonarQube container")
-		contId = docker.CreateContainer(cli, sonar.SonarqubeImage, "sonarqube")
+		contId = docker.CreateContainer(cli, sonar.SonarqubeImage, "sonarqube", []nat.Port{"9000/tcp"})
 		fmt.Println(" (" + docker.ShortId(contId) + ")")
 		fmt.Println("Starting SonarQube container")
 		docker.StartContainer(cli, contId)

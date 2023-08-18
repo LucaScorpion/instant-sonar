@@ -5,6 +5,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"io"
 	"strings"
 )
@@ -47,13 +48,25 @@ func PullImage(cli *client.Client, image string) {
 	io.Copy(io.Discard, out)
 }
 
-func CreateContainer(cli *client.Client, image, name string) string {
+func CreateContainer(cli *client.Client, image, name string, ports []nat.Port) string {
+	exposedPorts := nat.PortSet{}
+	portBindings := nat.PortMap{}
+
+	for _, port := range ports {
+		exposedPorts[port] = struct{}{}
+		portNum := strings.Split(string(port), "/")[0]
+		portBindings[port] = []nat.PortBinding{{HostPort: portNum}}
+	}
+
 	res, err := cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
-			Image: image,
+			Image:        image,
+			ExposedPorts: exposedPorts,
 		},
-		nil,
+		&container.HostConfig{
+			PortBindings: portBindings,
+		},
 		nil,
 		nil,
 		name,
