@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+const RunningState = "running"
+const shortIdLength = 12
+
 func NewDockerClient() *client.Client {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -67,4 +70,8 @@ func StartContainer(cli *client.Client, id string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func ShortId(id string) string {
+	return id[:shortIdLength]
 }

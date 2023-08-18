@@ -13,21 +13,20 @@ func main() {
 
 	contId := ""
 	if cont, exists := docker.FindContainerByImageName(cli, sonar.SonarqubeImage); exists {
-		fmt.Println("SonarQube container already exists")
 		contId = cont.ID
+		fmt.Println("SonarQube container already exists (" + docker.ShortId(contId) + ")")
 
-		if cont.State != "running" {
+		if cont.State != docker.RunningState {
 			fmt.Println("Starting SonarQube container")
 			docker.StartContainer(cli, contId)
 		}
 	} else {
 		fmt.Println("Pulling SonarQube image")
 		docker.PullImage(cli, sonar.SonarqubeImage)
-		fmt.Println("Creating SonarQube container")
+		fmt.Print("Creating SonarQube container")
 		contId = docker.CreateContainer(cli, sonar.SonarqubeImage, "sonarqube")
+		fmt.Println(" (" + docker.ShortId(contId) + ")")
 		fmt.Println("Starting SonarQube container")
 		docker.StartContainer(cli, contId)
 	}
-
-	fmt.Println(contId)
 }
