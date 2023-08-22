@@ -36,7 +36,7 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 	return res.ID
 }
 
-func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string) string {
+func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string, uid string) string {
 	res, err := cli.Cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
@@ -49,6 +49,7 @@ func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token,
 			Volumes: map[string]struct{}{
 				"/usr/src": {},
 			},
+			User: uid,
 		},
 		&container.HostConfig{
 			AutoRemove: true,

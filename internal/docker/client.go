@@ -83,5 +83,6 @@ func (c *Client) GetContainerIp(id string) string {
 }
 
 func (c *Client) WaitForContainer(id string, cond container.WaitCondition) {
-	c.Cli.ContainerWait(context.Background(), id, cond)
+	statusCh, _ := c.Cli.ContainerWait(context.Background(), id, cond)
+	<-statusCh
 }
