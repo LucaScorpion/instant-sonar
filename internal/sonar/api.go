@@ -2,6 +2,7 @@ package sonar
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,8 +61,8 @@ func (client *Client) CreateToken(projectKey string) string {
 	return tokenRes.Token
 }
 
-func (client *Client) DisableForceUserAuth() {
-	client.request(
+func (client *Client) DisableForceUserAuth() error {
+	res := client.request(
 		http.MethodPost,
 		"/api/settings/set",
 		createBody(map[string]string{
@@ -69,6 +70,11 @@ func (client *Client) DisableForceUserAuth() {
 			"value": "false",
 		}),
 	)
+
+	if res.StatusCode != http.StatusNoContent {
+		return errors.New("invalid sonarqube credentials")
+	}
+	return nil
 }
 
 func (client *Client) request(method, path string, body io.Reader) *http.Response {

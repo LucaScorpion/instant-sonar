@@ -19,19 +19,25 @@ import (
 type options struct {
 	help    bool
 	verbose bool
-	path    string
+
+	username string
+	password string
+
+	path string
 }
 
 var flags *flag.FlagSet
 
 func initCli() (*options, error) {
 	flags = flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ContinueOnError)
-
 	opts := options{}
+
 	flags.BoolVarP(&opts.help, "help", "h", false, "Print info and help")
 	flags.BoolVarP(&opts.verbose, "verbose", "v", false, "More verbose logging")
-	err := flags.Parse(os.Args[1:])
+	flags.StringVarP(&opts.username, "username", "u", "admin", "SonarQube admin username")
+	flags.StringVarP(&opts.password, "password", "p", "admin", "SonarQube admin password")
 
+	err := flags.Parse(os.Args[1:])
 	opts.path, _ = filepath.Abs(flags.Arg(0))
 
 	return &opts, err
@@ -56,13 +62,12 @@ func main() {
 		return
 	}
 
-	fmt.Println(opts.path)
-	log.Println("Starting Instant Sonar")
-
+	log.Verboseln("Starting Instant Sonar")
 	cli := docker.NewClient()
 	defer cli.Close()
 
-	log.Println("Preparing SonarQube image")
+	log.Println("Preparing SonarQube")
+
 	qubeContId := ""
 	if cont, exists := cli.FindContainerByImageName(sonar.SonarqubeImage); exists {
 		qubeContId = cont.ID
@@ -101,10 +106,14 @@ func main() {
 	out.Close()
 	log.Verboseln("SonarQube is operational")
 
-	log.Println("Preparing Sonar Scanner image")
 	qubeWebUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
-	sonarApi := sonar.NewApiClient(qubeWebUrl, "admin", "admin")
-	sonarApi.DisableForceUserAuth()
+	sonarApi := sonar.NewApiClient(qubeWebUrl, opts.username, opts.password)
+
+	log.Verboseln("Disabling force user auth")
+	if err := sonarApi.DisableForceUserAuth(); err != nil {
+		log.Errorln(err)
+		os.Exit(1)
+	}
 
 	log.Verbose("Creating project")
 	projectKey := internal.RandomString(16)
@@ -114,6 +123,8 @@ func main() {
 	log.Verbose("Creating analysis token")
 	token := sonarApi.CreateToken(projectKey)
 	log.Verboseln(" (" + token + ")")
+
+	log.Println("Preparing Sonar Scanner")
 
 	log.Verboseln("Pulling Sonar Scanner image")
 	cli.PullImage(sonar.SonarScannerImage)

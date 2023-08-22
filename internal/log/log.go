@@ -23,3 +23,7 @@ func Verbose(a ...any) {
 		fmt.Print(a...)
 	}
 }
+
+func Errorln(err error) {
+	fmt.Println("Error:", err)
+}
