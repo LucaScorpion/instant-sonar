@@ -1,0 +1,43 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            filename: instant-sonar_linux-x64
+          - goos: darwin
+            goarch: amd64
+            filename: instant-sonar_darwin-x64
+          - goos: darwin
+            goarch: arm
+            goarm: 7
+            filename: instant-sonar_darwin-arm7
+          - goos: windows
+            goarch: amd64
+            filename: instant-sonar_windows-x64
+    env:
+      CGO_ENABLED: 0
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      GOARM: ${{ matrix.goarm }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - run: go build -o ${{ matrix.filename }} ./cmd/instant-sonar.go
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: instant-sonar_*
+          generate_release_notes: true
