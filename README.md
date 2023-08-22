@@ -5,6 +5,8 @@
 [![Build](https://github.com/LucaScorpion/instant-sonar/actions/workflows/build.yml/badge.svg)](https://github.com/LucaScorpion/instant-sonar/actions/workflows/build.yml)
 [![Publish](https://github.com/LucaScorpion/instant-sonar/actions/workflows/publish.yml/badge.svg)](https://github.com/LucaScorpion/instant-sonar/actions/workflows/publish.yml)
 
+[![asciicast of instant-sonar](https://asciinema.org/a/604152.svg)](https://asciinema.org/a/604152)
+
 ## Usage
 
 Simply download the appropriate binary for your platform from the [latest release](https://github.com/LucaScorpion/instant-sonar/releases/latest) and execute it.
