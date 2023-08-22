@@ -55,6 +55,7 @@ func main() {
 	fmt.Println("SonarQube is operational")
 
 	sonarApi := sonar.NewDefaultLocalSonarQubeClient()
+	sonarApi.DisableForceUserAuth()
 
 	fmt.Print("Creating project")
 	projectKey := internal.RandomString(16)

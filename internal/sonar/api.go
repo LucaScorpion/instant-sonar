@@ -60,6 +60,17 @@ func (client *Client) CreateToken(projectKey string) string {
 	return tokenRes.Token
 }
 
+func (client *Client) DisableForceUserAuth() {
+	client.request(
+		http.MethodPost,
+		"/api/settings/set",
+		createBody(map[string]string{
+			"key":   "sonar.forceAuthentication",
+			"value": "false",
+		}),
+	)
+}
+
 func (client *Client) request(method, path string, body io.Reader) *http.Response {
 	req, _ := http.NewRequest(method, client.Url+path, body)
 	req.SetBasicAuth(client.username, client.password)
