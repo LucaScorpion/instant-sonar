@@ -2,10 +2,11 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/docker/docker/api/types/container"
+	flag "github.com/spf13/pflag"
 	"instant-sonar/internal"
 	"instant-sonar/internal/docker"
+	"instant-sonar/internal/log"
 	"instant-sonar/internal/sonar"
 	"os"
 	"os/user"
@@ -13,33 +14,49 @@ import (
 	"strings"
 )
 
+type options struct {
+	verbose bool
+}
+
+func initCli() *options {
+	opts := options{}
+	flag.BoolVarP(&opts.verbose, "verbose", "v", false, "More verbose logging")
+	flag.Parse()
+	return &opts
+}
+
 func main() {
-	fmt.Println("Starting instant Sonar")
+	opts := initCli()
+	log.IsVerbose = opts.verbose
+
+	log.Println("Starting Instant Sonar")
+
 	cli := docker.NewClient()
 	defer cli.Close()
 
+	log.Println("Preparing SonarQube image")
 	qubeContId := ""
 	if cont, exists := cli.FindContainerByImageName(sonar.SonarqubeImage); exists {
 		qubeContId = cont.ID
-		fmt.Println("SonarQube container already exists (" + docker.ShortId(qubeContId) + ")")
+		log.Verboseln("SonarQube container already exists (" + docker.ShortId(qubeContId) + ")")
 
 		if cont.State != docker.RunningState {
-			fmt.Println("Starting SonarQube container")
+			log.Verboseln("Starting SonarQube container")
 			cli.StartContainer(qubeContId)
 		}
 	} else {
-		fmt.Println("Pulling SonarQube image")
+		log.Verboseln("Pulling SonarQube image")
 		cli.PullImage(sonar.SonarqubeImage)
 
-		fmt.Print("Creating SonarQube container")
+		log.Verbose("Creating SonarQube container")
 		qubeContId = sonar.CreateSonarQubeContainer(cli)
-		fmt.Println(" (" + docker.ShortId(qubeContId) + ")")
+		log.Verboseln(" (" + docker.ShortId(qubeContId) + ")")
 
-		fmt.Println("Starting SonarQube container")
+		log.Verboseln("Starting SonarQube container")
 		cli.StartContainer(qubeContId)
 	}
 
-	fmt.Println("Waiting for SonarQube to be operational")
+	log.Verboseln("Waiting for SonarQube to be operational")
 	out := cli.FollowContainerLogStream(qubeContId)
 	bufOut := bufio.NewReader(out)
 
@@ -54,37 +71,37 @@ func main() {
 		}
 	}
 	out.Close()
-	fmt.Println("SonarQube is operational")
+	log.Verboseln("SonarQube is operational")
 
+	log.Println("Preparing Sonar Scanner image")
 	qubeWebUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
 	sonarApi := sonar.NewApiClient(qubeWebUrl, "admin", "admin")
 	sonarApi.DisableForceUserAuth()
 
-	fmt.Print("Creating project")
+	log.Verbose("Creating project")
 	projectKey := internal.RandomString(16)
 	sonarApi.CreateProject(projectKey, projectKey)
-	fmt.Println(" (" + projectKey + ")")
+	log.Verboseln(" (" + projectKey + ")")
 
-	fmt.Print("Creating analysis token")
+	log.Verbose("Creating analysis token")
 	token := sonarApi.CreateToken(projectKey)
-	fmt.Println(" (" + token + ")")
+	log.Verboseln(" (" + token + ")")
 
-	fmt.Println("Pulling Sonar Scanner image")
+	log.Verboseln("Pulling Sonar Scanner image")
 	cli.PullImage(sonar.SonarScannerImage)
 
-	fmt.Print("Creating Sonar Scanner container")
+	log.Verbose("Creating Sonar Scanner container")
 	scanDir, _ := os.Getwd() // TODO: Get from argument
 	curUser, _ := user.Current()
 	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token, scanDir, curUser.Uid)
-	fmt.Println(" (" + docker.ShortId(scanContId) + ")")
+	log.Verboseln(" (" + docker.ShortId(scanContId) + ")")
 
-	fmt.Println("Starting analysis")
+	log.Println("Starting analysis")
 	cli.StartContainer(scanContId)
 	cli.WaitForContainer(scanContId, container.WaitConditionRemoved)
 
-	fmt.Println("Cleaning up")
+	log.Verboseln("Removing scannerwork directory")
 	os.RemoveAll(path.Join(scanDir, sonar.ScannerworkDir))
 
-	fmt.Println("Done!")
-	fmt.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
+	log.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
 }
