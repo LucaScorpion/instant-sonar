@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"github.com/docker/docker/api/types/container"
 	flag "github.com/spf13/pflag"
 	"instant-sonar/internal"
@@ -10,25 +12,51 @@ import (
 	"instant-sonar/internal/sonar"
 	"os"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
 type options struct {
+	help    bool
 	verbose bool
+	path    string
 }
 
-func initCli() *options {
+var flags *flag.FlagSet
+
+func initCli() (*options, error) {
+	flags = flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ContinueOnError)
+
 	opts := options{}
-	flag.BoolVarP(&opts.verbose, "verbose", "v", false, "More verbose logging")
-	flag.Parse()
-	return &opts
+	flags.BoolVarP(&opts.help, "help", "h", false, "Print info and help")
+	flags.BoolVarP(&opts.verbose, "verbose", "v", false, "More verbose logging")
+	err := flags.Parse(os.Args[1:])
+
+	opts.path, _ = filepath.Abs(flags.Arg(0))
+
+	return &opts, err
 }
 
 func main() {
-	opts := initCli()
+	opts, err := initCli()
 	log.IsVerbose = opts.verbose
 
+	if flags.NArg() > 1 {
+		err = errors.New("too many paths given")
+	}
+
+	if err != nil && !errors.Is(err, flag.ErrHelp) {
+		fmt.Println(err)
+		printHelp()
+		os.Exit(2)
+	}
+
+	if opts.help {
+		printHelp()
+		return
+	}
+
+	fmt.Println(opts.path)
 	log.Println("Starting Instant Sonar")
 
 	cli := docker.NewClient()
@@ -91,9 +119,8 @@ func main() {
 	cli.PullImage(sonar.SonarScannerImage)
 
 	log.Verbose("Creating Sonar Scanner container")
-	scanDir, _ := os.Getwd() // TODO: Get from argument
 	curUser, _ := user.Current()
-	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token, scanDir, curUser.Uid)
+	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token, opts.path, curUser.Uid)
 	log.Verboseln(" (" + docker.ShortId(scanContId) + ")")
 
 	log.Println("Starting analysis")
@@ -101,7 +128,13 @@ func main() {
 	cli.WaitForContainer(scanContId, container.WaitConditionRemoved)
 
 	log.Verboseln("Removing scannerwork directory")
-	os.RemoveAll(path.Join(scanDir, sonar.ScannerworkDir))
+	os.RemoveAll(filepath.Join(opts.path, sonar.ScannerworkDir))
 
 	log.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
+}
+
+func printHelp() {
+	cmdName := filepath.Base(os.Args[0])
+	fmt.Println("Usage: " + cmdName + " [options...] [path]")
+	flags.PrintDefaults()
 }
