@@ -20,11 +20,11 @@ type tokenResponse struct {
 	Token string `json:"token"`
 }
 
-func NewDefaultLocalSonarQubeClient() *Client {
+func NewApiClient(url, username, password string) *Client {
 	return &Client{
-		Url:      "http://localhost:9000",
-		username: "admin",
-		password: "admin",
+		Url:      url,
+		username: username,
+		password: password,
 	}
 }
 

@@ -3,16 +3,16 @@ package sonar
 import (
 	"context"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"instant-sonar/internal/docker"
 )
 
 const SonarqubeImage = "sonarqube"
 const SonarScannerImage = "sonarsource/sonar-scanner-cli"
 const SonarqubeOperationalMsg = "SonarQube is operational"
 
-func CreateSonarQubeContainer(cli *client.Client) string {
-	res, err := cli.ContainerCreate(
+func CreateSonarQubeContainer(cli *docker.Client) string {
+	res, err := cli.Cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
 			Image: SonarqubeImage,
@@ -36,9 +36,9 @@ func CreateSonarQubeContainer(cli *client.Client) string {
 	return res.ID
 }
 
-func CreateSonarScannerContainer(cli *client.Client, hostUrl, projectKey, token string) string {
+func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token string) string {
 	// TODO: Volume mapping
-	res, err := cli.ContainerCreate(
+	res, err := cli.Cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
 			Image: SonarScannerImage,
