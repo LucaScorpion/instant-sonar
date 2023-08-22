@@ -8,6 +8,8 @@ import (
 	"instant-sonar/internal"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -71,11 +73,15 @@ func main() {
 	cli.PullImage(sonar.SonarScannerImage)
 
 	fmt.Print("Creating Sonar Scanner container")
-	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token)
+	scanDir, _ := os.Getwd() // TODO: Get from argument
+	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token, scanDir)
 	fmt.Println(" (" + docker.ShortId(scanContId) + ")")
 
 	fmt.Println("Starting analysis")
 	cli.StartContainer(scanContId)
+	scanOut := cli.FollowContainerLogStream(scanContId)
+	defer scanOut.Close()
+	io.Copy(os.Stdout, scanOut)
 	cli.Cli.ContainerWait(context.Background(), scanContId, container.WaitConditionRemoved)
 	fmt.Println("Done!")
 

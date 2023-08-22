@@ -17,7 +17,7 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 		&container.Config{
 			Image: SonarqubeImage,
 			ExposedPorts: nat.PortSet{
-				"9000/tcp": struct{}{},
+				"9000/tcp": {},
 			},
 		},
 		&container.HostConfig{
@@ -36,21 +36,25 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 	return res.ID
 }
 
-func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token string) string {
-	// TODO: Volume mapping
+func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string) string {
 	res, err := cli.Cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
 			Image: SonarScannerImage,
 			Env: []string{
-				"SONAR_HOST_URL=\"" + hostUrl + "\"",
-				"SONAR_SCANNER_OPTS=\"-Dsonar.projectKey=" + projectKey + "\"",
-				"SONAR_TOKEN=\"" + token + "\"",
+				"SONAR_HOST_URL=" + hostUrl,
+				"SONAR_SCANNER_OPTS=-Dsonar.projectKey=" + projectKey,
+				"SONAR_TOKEN=" + token,
+			},
+			Volumes: map[string]struct{}{
+				"/usr/src": {},
 			},
 		},
 		&container.HostConfig{
-			AutoRemove:  true,
-			NetworkMode: "host",
+			AutoRemove: true,
+			Binds: []string{
+				scanDir + ":/usr/src",
+			},
 		},
 		nil,
 		nil,

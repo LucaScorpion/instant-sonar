@@ -65,6 +65,7 @@ func (c *Client) FollowContainerLogStream(id string) io.ReadCloser {
 	out, err := c.Cli.ContainerLogs(context.Background(), id, dockerTypes.ContainerLogsOptions{
 		Follow:     true,
 		ShowStdout: true,
+		ShowStderr: true,
 	})
 	if err != nil {
 		panic(err)
