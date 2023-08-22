@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	dockerSdk "github.com/docker/docker/client"
 	"io"
 	"strings"
@@ -79,4 +80,8 @@ func (c *Client) GetContainerIp(id string) string {
 		panic(err)
 	}
 	return res.NetworkSettings.IPAddress
+}
+
+func (c *Client) WaitForContainer(id string, cond container.WaitCondition) {
+	c.Cli.ContainerWait(context.Background(), id, cond)
 }

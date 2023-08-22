@@ -2,13 +2,11 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"github.com/docker/docker/api/types/container"
 	"instant-sonar/internal"
 	"instant-sonar/internal/docker"
 	"instant-sonar/internal/sonar"
-	"io"
 	"os"
 	"strings"
 )
@@ -79,10 +77,7 @@ func main() {
 
 	fmt.Println("Starting analysis")
 	cli.StartContainer(scanContId)
-	scanOut := cli.FollowContainerLogStream(scanContId)
-	defer scanOut.Close()
-	io.Copy(os.Stdout, scanOut)
-	cli.Cli.ContainerWait(context.Background(), scanContId, container.WaitConditionRemoved)
+	cli.WaitForContainer(scanContId, container.WaitConditionRemoved)
 	fmt.Println("Done!")
 
 	fmt.Println("Project dashboard: " + sonarApi.ProjectDashboardUrl(projectKey))
