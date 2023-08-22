@@ -107,8 +107,7 @@ func main() {
 	out.Close()
 	log.Verboseln("SonarQube is operational")
 
-	qubeWebUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
-	sonarApi := sonar.NewApiClient(qubeWebUrl, opts.username, opts.password)
+	sonarApi := sonar.NewApiClient("http://127.0.0.1:9000", opts.username, opts.password)
 
 	log.Verboseln("Waiting for SonarQube API to be up")
 	var lastErr error
@@ -145,8 +144,9 @@ func main() {
 	cli.PullImage(sonar.SonarScannerImage)
 
 	log.Verbose("Creating Sonar Scanner container")
+	qubeDockerUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
 	curUser, _ := user.Current()
-	scanContId := sonar.CreateSonarScannerContainer(cli, sonarApi.Url, projectKey, token, opts.path, curUser.Uid)
+	scanContId := sonar.CreateSonarScannerContainer(cli, qubeDockerUrl, projectKey, token, opts.path, curUser.Uid)
 	log.Verboseln(" (" + docker.ShortId(scanContId) + ")")
 
 	log.Println("Starting analysis")
