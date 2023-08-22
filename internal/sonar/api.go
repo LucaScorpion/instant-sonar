@@ -11,6 +11,8 @@ import (
 
 const apiContentType = "application/x-www-form-urlencoded"
 
+var ErrUnauthorized = errors.New("invalid sonarqube credentials")
+
 type Client struct {
 	Url      string
 	username string
@@ -41,7 +43,7 @@ func (client *Client) CreateProject(name, key string) {
 }
 
 func (client *Client) CreateToken(projectKey string) string {
-	res := client.request(
+	res, _ := client.request(
 		http.MethodPost,
 		"/api/user_tokens/generate",
 		createBody(map[string]string{
@@ -61,8 +63,8 @@ func (client *Client) CreateToken(projectKey string) string {
 	return tokenRes.Token
 }
 
-func (client *Client) DisableForceUserAuth() error {
-	res := client.request(
+func (client *Client) DisableForceUserAuth() {
+	client.request(
 		http.MethodPost,
 		"/api/settings/set",
 		createBody(map[string]string{
@@ -70,19 +72,26 @@ func (client *Client) DisableForceUserAuth() error {
 			"value": "false",
 		}),
 	)
+}
 
-	if res.StatusCode != http.StatusNoContent {
-		return errors.New("invalid sonarqube credentials")
+func (client *Client) Ping() error {
+	res, err := client.request("GET", "/api/system/ping", nil)
+	if err != nil {
+		return err
 	}
+
+	if res.StatusCode == http.StatusUnauthorized {
+		return ErrUnauthorized
+	}
+
 	return nil
 }
 
-func (client *Client) request(method, path string, body io.Reader) *http.Response {
+func (client *Client) request(method, path string, body io.Reader) (*http.Response, error) {
 	req, _ := http.NewRequest(method, client.Url+path, body)
 	req.SetBasicAuth(client.username, client.password)
 	req.Header.Set("Content-Type", apiContentType)
-	res, _ := http.DefaultClient.Do(req)
-	return res
+	return http.DefaultClient.Do(req)
 }
 
 func (client *Client) ProjectDashboardUrl(projectKey string) string {

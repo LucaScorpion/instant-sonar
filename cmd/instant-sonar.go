@@ -14,6 +14,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type options struct {
@@ -109,11 +110,24 @@ func main() {
 	qubeWebUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
 	sonarApi := sonar.NewApiClient(qubeWebUrl, opts.username, opts.password)
 
-	log.Verboseln("Disabling force user auth")
-	if err := sonarApi.DisableForceUserAuth(); err != nil {
-		log.Errorln(err)
+	log.Verboseln("Waiting for SonarQube API to be up")
+	var lastErr error
+	for i := 0; i < 30; i++ {
+		lastErr = sonarApi.Ping()
+		if lastErr == nil || errors.Is(lastErr, sonar.ErrUnauthorized) {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	if lastErr != nil {
+		log.Errorln(lastErr)
 		os.Exit(1)
 	}
+
+	log.Verboseln("Disabling force user auth")
+	sonarApi.DisableForceUserAuth()
 
 	log.Verbose("Creating project")
 	projectKey := internal.RandomString(16)
