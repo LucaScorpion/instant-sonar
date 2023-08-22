@@ -20,7 +20,7 @@ jobs:
             goarch: amd64
             filename: instant-sonar_darwin-x64
           - goos: darwin
-            goarch: arm
+            goarch: arm64
             goarm: 7
             filename: instant-sonar_darwin-arm7
           - goos: windows
