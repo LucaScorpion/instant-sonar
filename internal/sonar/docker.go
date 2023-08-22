@@ -20,7 +20,11 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 				"9000/tcp": {},
 			},
 		},
-		nil,
+		&container.HostConfig{
+			PortBindings: nat.PortMap{
+				"9000/tcp": []nat.PortBinding{{HostPort: "9000"}},
+			},
+		},
 		nil,
 		nil,
 		"sonarqube",
