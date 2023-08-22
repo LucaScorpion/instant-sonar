@@ -73,5 +73,9 @@ func (c *Client) FollowContainerLogStream(id string) io.ReadCloser {
 }
 
 func (c *Client) GetContainerIp(id string) string {
-	return "http://127.0.0.1:9000" // TODO
+	res, err := c.Cli.ContainerInspect(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	return res.NetworkSettings.IPAddress
 }

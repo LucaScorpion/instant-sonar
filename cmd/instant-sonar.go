@@ -54,7 +54,8 @@ func main() {
 	out.Close()
 	fmt.Println("SonarQube is operational")
 
-	sonarApi := sonar.NewApiClient(cli.GetContainerIp(qubeContId), "admin", "admin")
+	qubeWebUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
+	sonarApi := sonar.NewApiClient(qubeWebUrl, "admin", "admin")
 	sonarApi.DisableForceUserAuth()
 
 	fmt.Print("Creating project")
