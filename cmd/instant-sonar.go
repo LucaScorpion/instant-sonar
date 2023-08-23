@@ -148,7 +148,7 @@ func main() {
 	log.Verbose("Creating Sonar Scanner container")
 	qubeDockerUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
 	curUser, _ := user.Current()
-	scanContId := sonar.CreateSonarScannerContainer(cli, qubeDockerUrl, projectKey, token, opts.path, curUser.Uid, opts.copy)
+	scanContId := sonar.CreateSonarScannerContainer(cli, qubeDockerUrl, projectKey, token, opts.path, curUser.Uid, !opts.copy)
 	log.Verboseln(" (" + docker.ShortId(scanContId) + ")")
 
 	if opts.copy {

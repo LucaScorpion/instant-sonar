@@ -36,7 +36,7 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 	return res.ID
 }
 
-func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string, uid string, copy bool) string {
+func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string, uid string, bindVolumes bool) string {
 	contConfig := &container.Config{
 		Image: SonarScannerImage,
 		Env: []string{
@@ -51,7 +51,7 @@ func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token,
 		AutoRemove: true,
 	}
 
-	if !copy {
+	if bindVolumes {
 		contConfig.Volumes = map[string]struct{}{"/usr/src": {}}
 		hostConfig.Binds = []string{scanDir + ":/usr/src"}
 	}
