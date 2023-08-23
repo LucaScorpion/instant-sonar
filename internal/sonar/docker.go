@@ -36,27 +36,30 @@ func CreateSonarQubeContainer(cli *docker.Client) string {
 	return res.ID
 }
 
-func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string, uid string) string {
+func CreateSonarScannerContainer(cli *docker.Client, hostUrl, projectKey, token, scanDir string, uid string, copy bool) string {
+	contConfig := &container.Config{
+		Image: SonarScannerImage,
+		Env: []string{
+			"SONAR_HOST_URL=" + hostUrl,
+			"SONAR_SCANNER_OPTS=-Dsonar.projectKey=" + projectKey,
+			"SONAR_TOKEN=" + token,
+		},
+		User: uid,
+	}
+
+	hostConfig := &container.HostConfig{
+		AutoRemove: true,
+	}
+
+	if !copy {
+		contConfig.Volumes = map[string]struct{}{"/usr/src": {}}
+		hostConfig.Binds = []string{scanDir + ":/usr/src"}
+	}
+
 	res, err := cli.Cli.ContainerCreate(
 		context.Background(),
-		&container.Config{
-			Image: SonarScannerImage,
-			Env: []string{
-				"SONAR_HOST_URL=" + hostUrl,
-				"SONAR_SCANNER_OPTS=-Dsonar.projectKey=" + projectKey,
-				"SONAR_TOKEN=" + token,
-			},
-			Volumes: map[string]struct{}{
-				"/usr/src": {},
-			},
-			User: uid,
-		},
-		&container.HostConfig{
-			AutoRemove: true,
-			Binds: []string{
-				scanDir + ":/usr/src",
-			},
-		},
+		contConfig,
+		hostConfig,
 		nil,
 		nil,
 		"",

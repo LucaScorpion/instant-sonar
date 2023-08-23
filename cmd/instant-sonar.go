@@ -25,6 +25,7 @@ type options struct {
 	password string
 
 	path string
+	copy bool
 }
 
 var flags *flag.FlagSet
@@ -37,6 +38,7 @@ func initCli() (*options, error) {
 	flags.BoolVarP(&opts.verbose, "verbose", "v", false, "More verbose logging")
 	flags.StringVarP(&opts.username, "username", "u", "admin", "SonarQube admin username")
 	flags.StringVarP(&opts.password, "password", "p", "admin", "SonarQube admin password")
+	flags.BoolVarP(&opts.copy, "copy", "c", false, "Copy the files into the Sonar Scanner container instead of using a bound volume\nThis is generally faster on Mac and Windows")
 
 	err := flags.Parse(os.Args[1:])
 	opts.path, _ = filepath.Abs(flags.Arg(0))
@@ -146,8 +148,13 @@ func main() {
 	log.Verbose("Creating Sonar Scanner container")
 	qubeDockerUrl := "http://" + cli.GetContainerIp(qubeContId) + ":9000"
 	curUser, _ := user.Current()
-	scanContId := sonar.CreateSonarScannerContainer(cli, qubeDockerUrl, projectKey, token, opts.path, curUser.Uid)
+	scanContId := sonar.CreateSonarScannerContainer(cli, qubeDockerUrl, projectKey, token, opts.path, curUser.Uid, opts.copy)
 	log.Verboseln(" (" + docker.ShortId(scanContId) + ")")
+
+	if opts.copy {
+		log.Verboseln("Copying files to Sonar Scanner container")
+		cli.CopyDirToContainer(scanContId, opts.path, "/usr/src")
+	}
 
 	log.Println("Starting analysis")
 	cli.StartContainer(scanContId)
