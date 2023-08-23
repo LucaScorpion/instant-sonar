@@ -130,11 +130,9 @@ func main() {
 	log.Verboseln("Disabling force user auth")
 	sonarApi.DisableForceUserAuth()
 
-	wd, _ := os.Getwd()
-	dirName := filepath.Base(wd)
 	projectKey := internal.RandomString(16)
 	log.Verboseln("Creating project (" + projectKey + ")")
-	sonarApi.CreateProject(dirName, projectKey)
+	sonarApi.CreateProject(filepath.Base(opts.path), projectKey)
 
 	log.Verbose("Creating analysis token")
 	token := sonarApi.CreateToken(projectKey)
