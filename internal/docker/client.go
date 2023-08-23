@@ -5,6 +5,7 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	dockerSdk "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 	"io"
 	"strings"
 )
@@ -85,4 +86,16 @@ func (c *Client) GetContainerIp(id string) string {
 func (c *Client) WaitForContainer(id string, cond container.WaitCondition) {
 	statusCh, _ := c.Cli.ContainerWait(context.Background(), id, cond)
 	<-statusCh
+}
+
+func (c *Client) CopyDirToContainer(id, src, dest string) {
+	reader, err := archive.Tar(src, archive.Uncompressed)
+	if err != nil {
+		panic(err)
+	}
+
+	err = c.Cli.CopyToContainer(context.Background(), id, dest, reader, dockerTypes.CopyToContainerOptions{})
+	if err != nil {
+		panic(err)
+	}
 }

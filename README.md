@@ -29,6 +29,14 @@ For all help and options:
 instant-sonar --help
 ```
 
+## Performance Note (Mac + Windows)
+
+On Mac and Windows,
+using a bound volume for the Sonar Scanner can induce a performance hit.
+To improve this, there is a "copy" flag (`-c` or `--copy`),
+which will copy files into the Sonar Scanner container instead of binding a volume.
+On Linux, using this option is slower than using a bound volume.
+
 ## What it Does
 
 Instant Sonar will start a [SonarQube](https://hub.docker.com/_/sonarqube) container,
