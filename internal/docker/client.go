@@ -63,11 +63,12 @@ func (c *Client) StartContainer(id string) {
 	}
 }
 
-func (c *Client) FollowContainerLogStream(id string) io.ReadCloser {
+func (c *Client) FollowContainerLogStream(id string, since string) io.ReadCloser {
 	out, err := c.Cli.ContainerLogs(context.Background(), id, dockerTypes.ContainerLogsOptions{
 		Follow:     true,
 		ShowStdout: true,
 		ShowStderr: true,
+		Since:      since,
 	})
 	if err != nil {
 		panic(err)
@@ -98,4 +99,12 @@ func (c *Client) CopyDirToContainer(id, src, dest string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (c *Client) InspectContainer(id string) dockerTypes.ContainerJSON {
+	insp, err := c.Cli.ContainerInspect(context.Background(), id)
+	if err != nil {
+		panic(err)
+	}
+	return insp
 }
