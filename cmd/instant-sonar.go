@@ -14,7 +14,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type options struct {
@@ -93,7 +92,7 @@ func main() {
 	}
 
 	log.Verboseln("Waiting for SonarQube to be operational")
-	out := cli.FollowContainerLogStream(qubeContId)
+	out := cli.FollowContainerLogStream(qubeContId, cli.InspectContainer(qubeContId).State.StartedAt)
 	bufOut := bufio.NewReader(out)
 
 	for {
@@ -111,19 +110,9 @@ func main() {
 
 	sonarApi := sonar.NewApiClient("http://127.0.0.1:9000", opts.username, opts.password)
 
-	log.Verboseln("Waiting for SonarQube API to be up")
-	var lastErr error
-	for i := 0; i < 30; i++ {
-		lastErr = sonarApi.Ping()
-		if lastErr == nil || errors.Is(lastErr, sonar.ErrUnauthorized) {
-			break
-		}
-
-		time.Sleep(time.Second)
-	}
-
-	if lastErr != nil {
-		log.Errorln(lastErr)
+	log.Verboseln("Checking SonarQube API")
+	if err := sonarApi.Ping(); err != nil {
+		log.Errorln(err)
 		os.Exit(1)
 	}
 
