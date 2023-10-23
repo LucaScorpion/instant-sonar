@@ -3,7 +3,7 @@ module instant-sonar
 go 1.21
 
 require (
-	github.com/docker/docker v24.0.5+incompatible
+	github.com/docker/docker v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/spf13/pflag v1.0.5
 )
