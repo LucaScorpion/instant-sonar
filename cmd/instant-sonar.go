@@ -108,7 +108,7 @@ func main() {
 	out.Close()
 	log.Verboseln("SonarQube is operational")
 
-	sonarApi := sonar.NewApiClient("http://127.0.0.1:9000", opts.username, opts.password)
+	sonarApi := sonar.NewApiClient("http://localhost:9000", opts.username, opts.password)
 
 	log.Verboseln("Checking SonarQube API")
 	if err := sonarApi.Ping(); err != nil {
