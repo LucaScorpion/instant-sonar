@@ -15,4 +15,4 @@ jobs:
         with:
           go-version: '1.21'
       - run: test -z $(gofmt -l .)
-      - run: go build ./cmd/instant-sonar.go
+      - run: GOPROXY=direct go build ./cmd/instant-sonar.go
