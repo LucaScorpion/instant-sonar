@@ -31,7 +31,6 @@ jobs:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOARM: ${{ matrix.goarm }}
-      GONOPROXY: github.com/docker
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
